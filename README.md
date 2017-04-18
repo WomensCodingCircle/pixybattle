@@ -7,7 +7,7 @@ More information can be found on the [official website](http://womenscodingcircl
 ## Initial Setup
 If you want to return your PixyBot to its default settings, use one of the following methods:
 
-### Method #1: 
+### Method #1: PiBakery
 
 The easiest way to reset your PixyBot is to use the PiBakery recipe provided under the ./recipes directory.
 
