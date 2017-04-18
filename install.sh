@@ -30,7 +30,7 @@ ln -s $DIR/lib/pixy/build/pixymon/bin/PixyMon /home/pi/Desktop/PixyMon
 # Copy Python libs to src dir
 BUILD_DIR=$DIR/lib/pixy/build/robot_in_python
 TARGET_DIR=$DIR/src/python/pixy
-mkdir $TARGET_DIR
+mkdir -p $TARGET_DIR
 touch $TARGET_DIR/__init__.py
 cp $BUILD_DIR/pixy.py $TARGET_DIR
 cp $BUILD_DIR/_pixy.so $TARGET_DIR
