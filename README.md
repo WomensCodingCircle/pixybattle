@@ -4,8 +4,8 @@ Welcome to the Pixy Battle!
 
 More information can be found on the [official website](http://womenscodingcircle.com/pixyrace/).
 
-## Raspberry Pi Setup
-If you want to return your PixyBot to its default settings, follow one of the following methods:
+## Initial Setup
+If you want to return your PixyBot to its default settings, use one of the following methods:
 
 ### Method #1: 
 
@@ -27,23 +27,8 @@ Start by [downloading the NOOBS image](https://www.raspberrypi.org/downloads/noo
 #### Boot
 Once the SD card is ready, insert it into the Raspberry Pi, and connect an HDMI cable, a keyboard, and a laptop. Then connect a power cable to boot the Pi. The adapter should be capable of at least 2A @ 5V.
 
-#### Enable SSH server 
-We recommend enabling SSH, so that you can connect to the Pi remotely:
-1. Enter `sudo raspi-config` in a terminal window
-2. Select **Interfacing Options**
-3. Navigate to and select **SSH**
-4. Choose **Yes**
-5. Select **Ok**
-6. Choose **Finish**
-
-#### SSH to the Pi
-If you have a Macbook, you can connect directly to the Pi with an ethernet cable, and then run ssh from Terminal as follows. Other operating systems require [some extra effort](https://pihw.wordpress.com/guides/direct-network-connection/).
-```
-$ ssh pi@raspberrypi.local
-```
-
 #### Install dependencies 
-Open a terminal window and type the following command:
+Open a terminal window and type the following command to download and install the necessary system packages:
 ```
 $ sudo apt-get install git libusb-1.0-0-dev \
     qt4-dev-tools g++ libboost-all-dev cmake swig
@@ -60,4 +45,32 @@ This will download and build all the required libraries, and install them in the
 $ cd pixybattle
 $ ./install.sh
 ```
+
+## Customizing Keyboard layout
+
+By default, the Raspberry Pi is configured with a UK keyboard. To change to a US keyboard configuration, run the configuration command:
+```
+sudo dpkg-reconfigure keyboard-configuration
+```
+
+AFter saving, you must reboot to enable the new settings.
+
+## Enabling SSH 
+We recommend enabling SSH, so that you can connect to the Pi remotely:
+1. Enter `sudo raspi-config` in a terminal window
+2. Select **Interfacing Options**
+3. Navigate to and select **SSH**
+4. Choose **Yes**
+5. Select **Ok**
+6. Choose **Finish**
+
+#### SSH to the Pi
+If you have a Macbook, you can connect directly to the Pi with an ethernet cable, and then run ssh from Terminal as follows. Other operating systems require [some extra effort](https://pihw.wordpress.com/guides/direct-network-connection/).
+```
+$ ssh pi@raspberrypi.local
+```
+
+### Using PixyMon
+In order to assign color signatures for the PixyCam to recognize, you must use a utility called ```PixyMon```. To run this utility, connect an HDMI monitor, keyboard, and mouse to the Raspberry Pi and log into the GUI environment. If you followed all the setup steps above, you should see a shortcut to PixyMon on your desktop. 
+
 
