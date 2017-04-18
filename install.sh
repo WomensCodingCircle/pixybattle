@@ -5,6 +5,10 @@ echo "Setting up Pixy environment..."
 DIR=$(cd "$(dirname "$0")"; pwd);
 echo "Base directory: $DIR"
 
+# Clone the pixy repo
+cd $DIR/lib
+git clone https://github.com/WomensCodingCircle/pixy.git
+
 # Run build script
 echo "Building PixyMon..."
 cd $DIR/lib/pixy/scripts
