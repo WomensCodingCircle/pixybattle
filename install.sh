@@ -35,3 +35,6 @@ touch $TARGET_DIR/__init__.py
 cp $BUILD_DIR/pixy.py $TARGET_DIR
 cp $BUILD_DIR/_pixy.so $TARGET_DIR
 
+# Set keyboard to US layout
+L='us' && sudo sed -i 's/XKBLAYOUT=\"\w*"/XKBLAYOUT=\"'$L'\"/g' /etc/default/keyboard
+
