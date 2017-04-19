@@ -79,5 +79,10 @@ Once the initial set up is complete, you should be able to run any of the script
 * **circle.py** - randomly roams about around and pauses for 5 seconds each time it gets hit with an opposing IR gun
 * **lasertag.py** - follows Pixy's signature #1 (as set in PixyMon) and tries to fire the IR gun every second
 
+You must run these scripts as root (i.e. using ```sudo```), for example:
 
+```
+$ cd ~/pixybattle/src/python
+$ sudo python lasertag.py
+```
 
