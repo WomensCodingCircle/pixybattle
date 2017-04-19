@@ -9,7 +9,7 @@ If you want to return your PixyBot to its default settings, use one of the follo
 
 ### Method #1: PiBakery
 
-The easiest way to reset your PixyBot is to use the PiBakery recipe provided under the ./recipes directory.
+The easiest way to reset your PixyBot is to use the PiBakery recipe provided under the ```recipes``` directory.
 
 Download and run [PiBakery](http://www.pibakery.org/) and import the appropriate recipe. You can customize the Wifi settings as well. 
 
@@ -78,5 +78,6 @@ Once the initial set up is complete, you should be able to run any of the script
 * **racer.py** - this is the basic line-following racer code from 2016's Pixy Race
 * **circle.py** - randomly roams about around and pauses for 5 seconds each time it gets hit with an opposing IR gun
 * **lasertag.py** - follows Pixy's signature #1 (as set in PixyMon) and tries to fire the IR gun every second
+
 
 
