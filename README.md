@@ -85,10 +85,58 @@ $ cd ~/pixybattle/src/python
 $ sudo python lasertag.py
 ```
 
+## Testing with the Round Targets
+
+The targets communicate over a serial protocol. To execute commands on the target, plug it into a USB port and then open a connection using a serial communication program. There are several options, depending on your operating system. In either case you should install the drivers first:
+
+1) Install [Arduino IDE](https://www.arduino.cc/en/Main/Software)
+2) Install [Teensyduino](https://www.pjrc.com/teensy/td_download.html)
+
+At this point, you can try using the Serial Monitor built into Arduino IDE. It will let you execute commands, but you may not be able to get back all the text that the Target sends back, because the Serial Monitor has trouble with large amounts of text.
+
+Instead, we recommend using a dedicated RS232 terminal:
+
+### Windows
+
+[Termite](https://www.compuphase.com/software_termite.htm) will work well. After running it, click on **Settings** and then select the Port that your Target is connected to. You should also change **Transmitted text** to "Append CR-LF". Now you can type "HELP" in the terminal to get started.
+
+### MacOS
+
+On Macs, you can open the default Terminal program and then type:
+```
+$ ls -l /dev/cu.usb*
+```
+
+This will show your current USB devices. Identify the one which represents your connected Target and then type, for example:
+```
+$ screen -L /dev/cu.usbmodem2863271 115200
+```
+
 ## FAQs
 
 ### My PixyBot keeps rebooting, what gives?
 
 This is usually due to power issues. If you are running off batteries, make sure they are not drained. If you have power plugged into the micro USB port, make sure that it is capable of supplying 5V @ 2A. Do __not__ plug the Pi into a regular USB data port.
 
+### Things are not working as expected after my PiBakery install
+
+After booting, open a terminal (or ssh) and type:
+```
+$ more /boot/PiBakery/firstboot.log
+```
+This will show you a log of what happened during the first boot, during which PiBakery should have installed all the software and made the configuration setting changes. 
+
+If you'd like to run the PiBakery first boot script again, you can do so like this:
+```
+$ sudo cp /boot/PiBakery/firstBoot.sh /boot/PiBakery/nextBoot.sh
+```
+This will force the setup commands to run again on your next boot.
+
+### I'm getting errors when installing things with apt-get
+
+This might be due to the package site having problems. You can try a mirror by editing the sources file:
+```
+$ vi /etc/apt/sources.list
+```
+Now change the URL in the line beginning with "deb" to another package site found in the [mirror list](https://www.raspbian.org/RaspbianMirrors).
 
