@@ -92,13 +92,37 @@ The targets communicate over a serial protocol. To execute commands on the targe
 1) Install [Arduino IDE](https://www.arduino.cc/en/Main/Software)
 2) Install [Teensyduino](https://www.pjrc.com/teensy/td_download.html)
 
-At this point, you can try using the Serial Monitor built into Arduino IDE. It will let you execute commands, but you may not be able to get back all the text that the Target sends back, because the Serial Monitor has trouble with large amounts of text.
+At this point, you can try using the Serial Monitor built into Arduino IDE, or you can use a dedicated RS232 terminal:
 
-Instead, we recommend using a dedicated RS232 terminal:
+### Serial Monitor
+
+Open Arduino IDE, and make the following selections in the menus:
+Tools->Board->Teensy 3.2
+Tools->USB Type->Serial
+Tools->Port->(choose Teensy port)
+
+When you type **HELP** you should get this response from the Target:
+```
+Monitor communications:
+TX:
+  NEUTRAL,<LEFT/RIGHT>                   --> when going to default (green)
+  HIT,<RED/BLUE,<LEFT/RIGHT>             --> when getting 1st or 2nd hit
+  <RED/BLUE>:#1st hits,#2nd hits,#final  --> upon receiving 'SCORE' command
+RX:
+  START          --> starts the game
+  STOP           --> stops the game
+  SCORE          --> sends total hit counts
+  TEST_RED       --> sets both sides to red
+  TEST_BLUE      --> sets both sides to blue
+  TEST_GREEN     --> sets both sides to green
+  TEST_RED_BLUE  --> sets one side to red, one side to blue
+  RESET          --> reset target (ready to receive 'START')
+  HELP           --> list of commands
+```
 
 ### Windows
 
-[Termite](https://www.compuphase.com/software_termite.htm) will work well. After running it, click on **Settings** and then select the Port that your Target is connected to. You should also change **Transmitted text** to "Append CR-LF". Now you can type "HELP" in the terminal to get started.
+[Termite](https://www.compuphase.com/software_termite.htm) will also work for serial communication. After running it, click on **Settings** and then select the Port that your Target is connected to. You should also change **Transmitted text** to "Append CR-LF". 
 
 ### MacOS
 
