@@ -29,6 +29,8 @@
 //   TEST_BLUE  								--> sets both sides to blue
 //   TEST_GREEN  								--> sets both sides to green
 //   TEST_RED_BLUE		 						--> sets one side to red, one side to blue
+//   TEST_BLUE_HIT								--> Simulate a blue hit to both sides	
+//   TEST_RED_HIT								--> Simulate a red hit to both sides 	
 //   RESET          							--> reset target (ready to receive 'START')");
 //   HELP										--> list of commands
 //
@@ -37,9 +39,11 @@
 // For use with PixyTarget1b (Rev20174013)
 // 
 // VERSIONS
-// 20170515: 1st release to teams
+// 20170515: Preliminary version
+// 20170522: 1st release to all teams
+//		Added RX_WAIT_TIME, set to 100
 //------------------------------------------
-#define VERSION "20170515"
+#define VERSION "20170522"
 //#define DEBUG_THIS   1
 
 #include "IRremote2.h"
@@ -48,9 +52,11 @@
 #define HR_CLOCK_PERIOD_IN_USEC     500000  //= 500ms [uSec] 
 #define USEC_PER_SEC                1000000
 
-#define CLOCK_TIMEOUT_TRIGGER		500000;	//[sec]	
+#define CLOCK_TIMEOUT_TRIGGER		1000000	//[sec]	
 #define CLOCK_TIMEOUT_GO_NEUTRAL	20 * USEC_PER_SEC;	//[sec]
-#define CLOCK_TIMEOUT_BLINK			500000;	//[sec]
+#define CLOCK_TIMEOUT_BLINK			500000	//[sec]
+
+#define RX_WAIT_TIME				100		//[ms]  delay time to receive a signal per side
 
 IntervalTimer hrClock;                          //high resolution timer to measure LED time on    
 volatile unsigned long hrClockCount = 0;        // use volatile for shared variables
@@ -361,8 +367,6 @@ void StateEngine_SetNewState (ENUM_STATE newState, ENUM_SIDE side)
 			triggerState[side] = ENUM_TRIGGERED_STATE::NOT_TRIGGERED; 	//not triggerd yet
 			triggerCount[side] = hrClockCount + CLOCK_TIMEOUT_TRIGGER; 	//trigger timout
 
-			revertToNeutralCount[side] = hrClockCount + CLOCK_TIMEOUT_GO_NEUTRAL;
-
 			//Send serial message that going to neutral state
 			Serial.print("NEUTRAL,");
 			if (side == ENUM_SIDE::LEFT) { Serial.println("LEFT"); }
@@ -575,6 +579,27 @@ void loop() {
     		SetColors(ENUM_COLOR_LED::red,ENUM_SIDE::LEFT);
     		SetColors(ENUM_COLOR_LED::blue,ENUM_SIDE::RIGHT);
     	}   
+    	else if (strRxController == "TEST_BLUE_HIT")
+    	{
+    		newHit[ENUM_SIDE::LEFT] = ENUM_HIT_STATE::HIT_BLUE;
+    		StateEngine_Parse(ENUM_SIDE::LEFT);    		
+    		newHit[ENUM_SIDE::RIGHT] = ENUM_HIT_STATE::HIT_BLUE;
+    		StateEngine_Parse(ENUM_SIDE::RIGHT);    		
+    	}       	
+    	else if (strRxController == "TEST_RED_HIT")
+    	{
+    		newHit[ENUM_SIDE::LEFT] = ENUM_HIT_STATE::HIT_RED;
+    		StateEngine_Parse(ENUM_SIDE::LEFT);    		
+    		newHit[ENUM_SIDE::RIGHT] = ENUM_HIT_STATE::HIT_RED;
+    		StateEngine_Parse(ENUM_SIDE::RIGHT);    		
+    	}       	
+    	else if (strRxController == "TEST_BLACK")
+    	{
+    		StateEngine_SetNewState(ENUM_STATE::NONE, ENUM_SIDE::LEFT);
+    		StateEngine_SetNewState(ENUM_STATE::NONE, ENUM_SIDE::RIGHT);    		
+    		SetColors(ENUM_COLOR_LED::black,ENUM_SIDE::LEFT);
+    		SetColors(ENUM_COLOR_LED::black,ENUM_SIDE::RIGHT); 		
+    	}       	
     	else if (strRxController == "RESET")
     	{
     		SetColors(ENUM_COLOR_LED::green,ENUM_SIDE::LEFT);
@@ -584,7 +609,7 @@ void loop() {
     	}     	
     	else if (strRxController == "HELP")
     	{
-    		Serial.println("Monitor communications:");
+			Serial.println("Pixy Battle Target");
     		Serial.println("TX:");
     		Serial.println("  NEUTRAL,<LEFT/RIGHT>                   --> when going to default (green)");
     		Serial.println("  HIT,<RED/BLUE,<LEFT/RIGHT>             --> when getting 1st or 2nd hit");
@@ -597,10 +622,18 @@ void loop() {
     		Serial.println("  TEST_BLUE      --> sets both sides to blue");
     		Serial.println("  TEST_GREEN     --> sets both sides to green");
     		Serial.println("  TEST_RED_BLUE  --> sets one side to red, one side to blue");
+    		Serial.println("  TEST_BLUE_HIT	 --> Simulate a blue hit to both sides");	
+    		Serial.println("  TEST_RED_HIT	 --> Simulate a red hit to both sides");     
+    		Serial.println("  TEST_BLACK     --> Simulate no LED on both sides");		
     		Serial.println("  RESET          --> reset target (ready to receive 'START')");
     		Serial.println("  HELP           --> list of commands");
+    		Serial.println("  VERSION        --> code version");    		
     		Serial.println();    	 	    	
 		}
+    	else if (strRxController == "VERSION")
+    	{
+    		Serial.println(VERSION);
+    	}			
     }
 
 	//==LEFT==
@@ -616,8 +649,9 @@ void loop() {
 
 	  	//Check if hit - IR Receive 
 	  	irrecv.enableIRIn(IR_RX_L_PIN); 
-	  	delay(50);
+	  	delay(RX_WAIT_TIME);
 
+	  	newHit[ENUM_SIDE::LEFT] = ENUM_HIT_STATE::HIT_NONE;
 	  	if (irrecv.decode(&results)) {    
 
 	    	//check if hit
@@ -626,9 +660,6 @@ void loop() {
 			}
 			else if (results.value == TX_MSG_RED) {
 				newHit[ENUM_SIDE::LEFT] = ENUM_HIT_STATE::HIT_RED;
-			}
-			else {
-				newHit[ENUM_SIDE::LEFT] = ENUM_HIT_STATE::HIT_NONE;
 			}
 
 			irrecv.resume(); // Receive the next value 		
@@ -649,7 +680,8 @@ void loop() {
 	  	
 	  	//Check if hit - IR Receive  
 	  	irrecv.enableIRIn(IR_RX_R_PIN); 
-	  	delay(50);
+	  	delay(RX_WAIT_TIME);
+		newHit[ENUM_SIDE::RIGHT] = ENUM_HIT_STATE::HIT_NONE;
 
 	  	if (irrecv.decode(&results)) {    
 
@@ -660,10 +692,7 @@ void loop() {
 			else if (results.value == TX_MSG_RED)  {
 				newHit[ENUM_SIDE::RIGHT] = ENUM_HIT_STATE::HIT_RED;
 			}
-			else {
-				newHit[ENUM_SIDE::RIGHT] = ENUM_HIT_STATE::HIT_NONE;			
-			}
-
+		
 	  		irrecv.resume(); // Receive the next value 
 	  	}    	
   	}
