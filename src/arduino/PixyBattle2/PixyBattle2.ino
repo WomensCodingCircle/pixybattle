@@ -1,14 +1,20 @@
 //------------------------------------------
 // PixyBattle2.ino
 //
-// Test program for IR hardware.  
-// Sends and receives IR signals in loopback mode
-// using Rc5 protocol.  Sends Rx results to Serial 
-// port for monitoring.
+// Program to run Pixy Bots.
+// Upon command fires IR burst and blinks LEDs.
+// If hit then prevents firing for time period and blinks LEDs. 
+// Receives IR signals using RC5 protocol.
+// Receiving is done through IRremote library.
+// Transmit is done through IntervalTimer interrupt
+//   to pulse at ~38KHz.  Protocol mark/space is 
+//   done through individual functions (copied heavily
+//   from IRremote library).   
+// Communicates over serial port for control.
 // 
 // Connection:
-// Rx: pin 4 to output of TSAL6200  
-// Tx: pin 5 through 120KOhm resitor to TSOP34338SS1F 
+// Rx: pin 4 to output of TSAL6200 (IR receiver)   
+// Tx: pin 5 through 120KOhm resitor to TSOP34338SS1F (IR transmitter) #not implemented#
 // Team select : pin 6 (high/ low)
 // Left-Red : pin 15
 // Left-Green : pin 16
@@ -17,13 +23,7 @@
 // Right-Green : pin 19
 // Right-Blue : pin 20
 //
-// Receiving is done through IRremote library
-// Transmit is done through IntervalTimer interrupt
-//   to pulse at ~38KHz.  Protocol mark/space is 
-//   done through individual functions (copied heavily
-//   from IRremote library).  
-//  
-// For use with Pixy_IR1d (Rev20170329)
+// For use with Pixy_IR1d (Rev20170329) PCB
 //
 // VERSIONS
 // 20170419: 1st release to teams
@@ -33,8 +33,9 @@
 // 20170522: 1st release to all teams after modification of Tx resistor to lower power
 //		When firing send out ~500 ms of pulses (10 pulses + 10 delays of 25ms)
 //		Added a HELP command to diplay all options
+// 20170524: Cleaned up documentation
 //------------------------------------------
-#define VERSION "20170522"
+#define VERSION "20170524"
 //#define DEBUG_THIS   1
 
 #include "IRremote.h"
@@ -49,8 +50,7 @@
 //Timing
 #define  LOOP_DELAY					50		//[ms]
 #define  FIRING_COOL_DOWN_COUNT 	10		//[LOOP_DELAYs]  Cooldown when firing
-#define  FIRE_LOCK_OUT 				200		//[LOOP_DELAYs]  Lockout when hit by opponent
-//#define  FIRING_LED_ON_COUNT 		FIRING_COOL_DOWN_COUNT-4		//LOOP_DELAYs		
+#define  FIRE_LOCK_OUT 				200		//[LOOP_DELAYs]  Lockout when hit by opponent		
 
 //Colors
 enum ENUM_COLOR_LED {blue, red, green, yellow, cyan, magenta, white, black};
@@ -84,6 +84,7 @@ IntervalTimer myTimer; // Create an IntervalTimer object
 volatile bool IREnabled = false; // use volatile for shared variables
 volatile int ledState = LOW;
 unsigned int TxMsg = 0;
+
 
 
 void setup()
@@ -132,6 +133,7 @@ void setup()
 }
 
 
+//Set LED based on bTeam (e.g. from switch) 
 void setDefaultLeds (void) 
 {
 	if (bTeam == PIXY_RED) {     
@@ -143,6 +145,7 @@ void setDefaultLeds (void)
 }
 
 
+//Set LED colors
 void setColors (ENUM_COLOR_LED col)
 {
 	switch (col)
@@ -215,6 +218,8 @@ void setColors (ENUM_COLOR_LED col)
 	}
 }
 
+
+//Cycle through LED colors
 void blinkLeds (void) 
 {
 	int del = 50;
@@ -248,6 +253,7 @@ void blinkLeds (void)
 	delay(del);										
 }
 
+
 //IntervalTimer function to pulse Tx 
 void sendIR(void) {    
 
@@ -261,12 +267,14 @@ void sendIR(void) {
 	}
 }
 
+
 //Mark
 void  markIR (unsigned int time)
 {
 	IREnabled = true; // Enable output
 	if (time > 0) custom_delay_usec(time);
 }
+
 
 //Space
 void  spaceIR (unsigned int time)
@@ -321,6 +329,8 @@ void custom_delay_usec(unsigned long uSecs) {
 }
 
 
+
+//Main loop
 void loop() {
 	
 	delay (LOOP_DELAY);
@@ -392,15 +402,9 @@ void loop() {
 		//Serial.println(FiringCoolDownCounter);
 #endif	
 		FiringCoolDownCounter--;
-
-		//turn off firing leds 
-		// if (FiringCoolDownCounter == FIRING_LED_ON_COUNT) {
-		// 	digitalWrite(ONBOARD_LED_PIN, LOW);
-		//   	setDefaultLeds();	  		
-		// }
 	}
 
-	//Fire Lockout
+	//Fire lockout
 	if (FiringLockoutCounter > 0) {
 #ifdef DEBUG_THIS 
 		//Serial.println(FiringLockoutCounter);
@@ -428,7 +432,10 @@ void loop() {
   	//Receive
   	if (irrecv.decode(&results)) {    
     	irrecv.resume(); // Receive the next value 
+
+#ifdef DEBUG_THIS     	
     	//Serial.println(results.value);
+#endif
 
     	//check if hit
     	if (FiringLockoutCounter == 0) 

@@ -2,19 +2,24 @@
 // PixyTarget1.ino
 //
 // Program to run PixyBattle target.
-// Receives IR signals using Rc5 protocol.  to signify hits.
+// Colors changed based on state engine (Green = no hit, Blue/Red = hit). 
+// Receives IR signals using RC5 protocol.
+// Receiving is done sequentially per side (e.g. left -> right -> left ...)
+// Receiving is done through IRremote library. 
 // Communicates over serial port for monitoring.
 // 
 // Connection:
-// Rx: pin 4 to output of TSAL6200  
-// Tx: pin 5 through 120KOhm resitor to TSOP34338SS1F 
-// Team select : pin 6 (high/ low)
-// Left-Red : pin 15
-// Left-Green : pin 16
-// Left-Blue : pin 17
-// Right-Red : pin 18
-// Right-Green : pin 19
-// Right-Blue : pin 20
+// Rx: pin 4 to output of TSAL6200 (IR receiver)   
+// Rx - side selector: pin 6  
+// Tx: pin 5 through 120KOhm resitor to TSOP34338SS1F (IR transmitter) #not implemented#
+// Tx - side selector: pin 7  #not implemented#
+// 
+// Left-Red : pin 18
+// Left-Green : pin 19
+// Left-Blue : pin 20
+// Right-Red : pin 15
+// Right-Green : pin 16
+// Right-Blue : pin 27
 //
 // Monitor communications:
 // TX:
@@ -31,19 +36,19 @@
 //   TEST_RED_BLUE		 						--> sets one side to red, one side to blue
 //   TEST_BLUE_HIT								--> Simulate a blue hit to both sides	
 //   TEST_RED_HIT								--> Simulate a red hit to both sides 	
-//   RESET          							--> reset target (ready to receive 'START')");
+//   RESET          							--> reset target (ready to receive 'START')
 //   HELP										--> list of commands
-//
-// Receiving is done through IRremote library  
+//   VERSION  									--> code version 
 //  
-// For use with PixyTarget1b (Rev20174013)
+// For use with PixyTarget1b (Rev20174013) PCB
 // 
 // VERSIONS
 // 20170515: Preliminary version
 // 20170522: 1st release to all teams
-//		Added RX_WAIT_TIME, set to 100
+//		Added RX_WAIT_TIME, set to 100 ms
+// 20170524: Cleaned up documentation
 //------------------------------------------
-#define VERSION "20170522"
+#define VERSION "20170524"
 //#define DEBUG_THIS   1
 
 #include "IRremote2.h"
@@ -58,8 +63,8 @@
 
 #define RX_WAIT_TIME				100		//[ms]  delay time to receive a signal per side
 
-IntervalTimer hrClock;                          //high resolution timer to measure LED time on    
-volatile unsigned long hrClockCount = 0;        // use volatile for shared variables
+IntervalTimer hrClock;                      //high resolution timer to measure LED time on    
+volatile unsigned long hrClockCount = 0;    //use volatile for shared variables
 
 //ID 
 #define  PIXY_RED		1
@@ -108,8 +113,6 @@ unsigned long triggerCount[2];			//timeout  -> side is triggered
 unsigned long revertToNeutralCount[2];	//timeout  -> go back to neutral state from hit state
 unsigned long blinkCount[2];			//Used to blink 
 
-//long gameCompleteCount;			//timeout  -> game is over, go back to idle 
-
 //Pixy
 String strRequest;
 enum ENUM_STATE {NONE, IDLE, NEUTRAL, HIT};
@@ -123,6 +126,7 @@ decode_results results;
 
 //Controller messaging
 String    strRxController;		//Message from controller                                
+
 
 
 void setup()
@@ -173,6 +177,7 @@ void setup()
 }
 
 
+//Counter used for global timing 
 void hrTimerCount()
 {
     hrClockCount+= HR_CLOCK_PERIOD_IN_USEC;   //ignore oveflow (~2.4 hours @500ms period)  
@@ -288,7 +293,7 @@ void SetColors (ENUM_COLOR_LED col, ENUM_SIDE side)
 	} 	
 }
 
-
+//Cycle leds through available colors
 void blinkLeds (void) 
 {
 	int del = 100;
@@ -339,7 +344,7 @@ void custom_delay_usec(unsigned long uSecs) {
 
 //===STATE MACHINE===
 
-//State leaving andentry code
+//State leaving and entry code
 void StateEngine_SetNewState (ENUM_STATE newState, ENUM_SIDE side)
 {
 	switch (newState) {
@@ -405,7 +410,7 @@ void StateEngine_Parse (ENUM_SIDE side)
 	Serial.println(side);
 #endif	
 		
-	//State and/or Entering a state
+	//Parse the state 
 	switch (theState[side]) {
 
 		case ENUM_STATE::NONE:
@@ -489,10 +494,10 @@ void SendSerialMessage_Hit(ENUM_HIT_STATE team, ENUM_SIDE side)
 }
 
 
-
+//Main loop
 void loop() {
 
-	//== CONTROLLER MESSAGE RECEIVER==
+	//==CONTROLLER MESSAGE RECEIVER==
 	if(Serial.available() > 0)
 	{
     	strRxController = Serial.readStringUntil('\n');
@@ -512,9 +517,7 @@ void loop() {
     		if (theState[ENUM_SIDE::RIGHT] == ENUM_STATE::IDLE) {	    		
     			StateEngine_SetNewState(ENUM_STATE::NEUTRAL, ENUM_SIDE::RIGHT);
     			StateEngine_Parse(ENUM_SIDE::RIGHT);
-    		}    		
-    		
-    		//TODO: set gameCompleteCount based on data within message;		 				
+    		}    		    		 				
     	}
     	else if (strRxController == "STOP") 
     	{
@@ -697,6 +700,5 @@ void loop() {
 	  	}    	
   	}
   	StateEngine_Parse(ENUM_SIDE::RIGHT);
-
 
 }
