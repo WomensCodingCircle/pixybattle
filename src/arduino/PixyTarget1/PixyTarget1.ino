@@ -47,8 +47,10 @@
 // 20170522: 1st release to all teams
 //		Added RX_WAIT_TIME, set to 100 ms
 // 20170524: Cleaned up documentation
+// 20170612: Removed messages sent upon getting hit
+//    Fixed Version message
 //------------------------------------------
-#define VERSION "20170524"
+#define VERSION "20170612"
 //#define DEBUG_THIS   1
 
 #include "IRremote2.h"
@@ -57,11 +59,11 @@
 #define HR_CLOCK_PERIOD_IN_USEC     500000  //= 500ms [uSec] 
 #define USEC_PER_SEC                1000000
 
-#define CLOCK_TIMEOUT_TRIGGER		1000000	//[sec]	
-#define CLOCK_TIMEOUT_GO_NEUTRAL	20 * USEC_PER_SEC;	//[sec]
-#define CLOCK_TIMEOUT_BLINK			500000	//[sec]
+#define CLOCK_TIMEOUT_TRIGGER		    1000000	//[sec]	
+#define CLOCK_TIMEOUT_GO_NEUTRAL	  20 * USEC_PER_SEC;	//[sec]
+#define CLOCK_TIMEOUT_BLINK			    500000	//[sec]
 
-#define RX_WAIT_TIME				100		//[ms]  delay time to receive a signal per side
+#define RX_WAIT_TIME				        100		//[ms]  delay time to receive a signal per side
 
 IntervalTimer hrClock;                      //high resolution timer to measure LED time on    
 volatile unsigned long hrClockCount = 0;    //use volatile for shared variables
@@ -76,12 +78,12 @@ volatile unsigned long hrClockCount = 0;    //use volatile for shared variables
 #define  TX_SEL_RIGHT	HIGH
 
 //Hardware
-int IR_RX_L_PIN			= 4;
-int TX_PIN 				= 5;
-int IR_RX_R_PIN			= 6;
-int TX_SEL_PIN 			= 7;
+int IR_RX_L_PIN			  = 4;
+int TX_PIN 				    = 5;
+int IR_RX_R_PIN			  = 6;
+int TX_SEL_PIN 			  = 7;
 int ONBOARD_LED_PIN 	= 13;
-int LED_LEFT_RED 		= 18;
+int LED_LEFT_RED 		  = 18;
 int LED_LEFT_GREEN 		= 19;
 int LED_LEFT_BLUE 		= 20;
 int LED_RIGHT_RED 		= 15;
@@ -166,7 +168,7 @@ void setup()
 	pinMode(TX_PIN, OUTPUT);  
 	digitalWrite(TX_PIN,  false);
 
-    //reset and start clock 
+  //reset and start clock 
 	hrClockCount = 0;
 	hrClock.priority(128); 
 	hrClock.begin(hrTimerCount, HR_CLOCK_PERIOD_IN_USEC);  
@@ -387,7 +389,7 @@ void StateEngine_SetNewState (ENUM_STATE newState, ENUM_SIDE side)
 
 			revertToNeutralCount[side] = hrClockCount + CLOCK_TIMEOUT_GO_NEUTRAL;
 
-			SendSerialMessage_Hit(newHit[side], side);			
+			//SendSerialMessage_Hit(newHit[side], side);			
 			break; 
 
 		default:
@@ -609,7 +611,11 @@ void loop() {
     		SetColors(ENUM_COLOR_LED::green,ENUM_SIDE::RIGHT);    		
 			StateEngine_SetNewState(ENUM_STATE::IDLE, ENUM_SIDE::LEFT);
 			StateEngine_SetNewState(ENUM_STATE::IDLE, ENUM_SIDE::RIGHT);	  		
-    	}     	
+    	}   
+      else if (strRxController == "VERSION")
+      {
+        Serial.println(VERSION);
+      }             	
     	else if (strRxController == "HELP")
     	{
 			Serial.println("Pixy Battle Target");
