@@ -34,8 +34,11 @@
 //		When firing send out ~500 ms of pulses (10 pulses + 10 delays of 25ms)
 //		Added a HELP command to diplay all options
 // 20170524: Cleaned up documentation
+// 20170612: Changes for led behaivor
+//    Reduced green on-time to 250ms when firing
+//    Turn off led when get hit 
 //------------------------------------------
-#define VERSION "20170524"
+#define VERSION "20170612"
 //#define DEBUG_THIS   1
 
 #include "IRremote.h"
@@ -125,11 +128,11 @@ void setup()
 	digitalWrite(TX_PIN,  false);
 	myTimer.begin(sendIR, 13);  // 14-->35.71KHz  13-->38.46KHz
 
-  	// Start the receiver
-  	irrecv.enableIRIn(); 
+	// Start the receiver
+	irrecv.enableIRIn(); 
 
-  	FiringCoolDownCounter = 0;
-  	FiringLockoutCounter = 0;
+	FiringCoolDownCounter = 0;
+	FiringLockoutCounter = 0;
 }
 
 
@@ -335,39 +338,58 @@ void loop() {
 	
 	delay (LOOP_DELAY);
 
-  	//Transmit  
+  //Transmit  
 	if(Serial.available() > 0)
 	{
-    	strRequest = Serial.readStringUntil('\n');
-    	strRequest.trim();
+    strRequest = Serial.readStringUntil('\n');
+    strRequest.trim();
 
-    	if ((strRequest == "FIRE") && (FiringCoolDownCounter == 0) && (FiringLockoutCounter == 0)) 
-    	{
-		  	digitalWrite(ONBOARD_LED_PIN, HIGH);	  		
-			setColors(ENUM_COLOR_LED::green);
-			
-			if (bTeam == PIXY_RED) { 
-				//repeat for ~500ms (@ ~25ms per message)    
-				for (int i = 0; i<10; i++)
-	  			{
-	  				sendRC5(TX_MSG_RED, TX_MSG_LENGTH);
-	  				delay(25);
-	  			}
-			}
-			else {        
-				//repeat for ~500ms (@ ~25ms per message)    
-				for (int i = 0; i<10; i++)
-	  			{
-	  				sendRC5(TX_MSG_BLUE, TX_MSG_LENGTH);
-	  				delay(25);
-	  			}	  			 				  				  			
-			} 		
+  	if ((strRequest == "FIRE") && (FiringCoolDownCounter == 0) && (FiringLockoutCounter == 0)) 
+  	{
+	  	digitalWrite(ONBOARD_LED_PIN, HIGH);	  		
+		  setColors(ENUM_COLOR_LED::green);
 		
-			//reset colors  	
-		 	digitalWrite(ONBOARD_LED_PIN, LOW);
-		   	setDefaultLeds();
+      if (bTeam == PIXY_RED) 
+      { 
+      	//repeat for ~250ms (@ ~25ms per message)    
+      	for (int i = 0; i<5; i++)
+      	{
+      		sendRC5(TX_MSG_RED, TX_MSG_LENGTH);
+      		delay(25);
+      	}
+        
+        //reset colors    
+        digitalWrite(ONBOARD_LED_PIN, LOW);
+        setDefaultLeds();
+        
+        //repeat for ~250ms (@ ~25ms per message)    
+        for (int i = 0; i<5; i++)
+        {
+          sendRC5(TX_MSG_RED, TX_MSG_LENGTH);
+          delay(25);
+        }               
+      }
+      else 
+      {        
+      	//repeat for ~250ms (@ ~25ms per message)    
+      	for (int i = 0; i<5; i++)
+      	{
+      		sendRC5(TX_MSG_BLUE, TX_MSG_LENGTH);
+      		delay(25);
+      	}	 
+               
+        //reset colors    
+        digitalWrite(ONBOARD_LED_PIN, LOW);
+        setDefaultLeds();
+        
+        for (int i = 0; i<5; i++)
+        {
+          sendRC5(TX_MSG_BLUE, TX_MSG_LENGTH);
+          delay(25);
+        }               			 				  				  			
+      } 		
 
-			FiringCoolDownCounter = FIRING_COOL_DOWN_COUNT;
+		  FiringCoolDownCounter = FIRING_COOL_DOWN_COUNT;
 		} 	
 		else if (strRequest == "TEAM")
 		{
@@ -378,25 +400,25 @@ void loop() {
 				Serial.println("BLUE");
 			}			
 		}
-    	else if (strRequest == "HELP")
-    	{
-    		Serial.println("Pixy Battle Bot");
-    		Serial.println("TX:");
-    		Serial.println("  <RED/BLUE>     --> upon receiving 'TEAM?' command");
-    		Serial.println("RX:");
-    		Serial.println("  FIRE           --> to fire IR pulses");
-    		Serial.println("  TEAM           --> to display team color");
-    		Serial.println("  HELP           --> list of commands");
-    		Serial.println("  VERSION        --> code version");
-    		Serial.println();    	 	    	
+    else if (strRequest == "HELP")
+    {
+  		Serial.println("Pixy Battle Bot");
+  		Serial.println("TX:");
+  		Serial.println("  <RED/BLUE>     --> upon receiving 'TEAM?' command");
+  		Serial.println("RX:");
+  		Serial.println("  FIRE           --> to fire IR pulses");
+  		Serial.println("  TEAM           --> to display team color");
+  		Serial.println("  HELP           --> list of commands");
+  		Serial.println("  VERSION        --> code version");
+  		Serial.println();    	 	    	
 		}	
-    	else if (strRequest == "VERSION")
-    	{
-    		Serial.println(VERSION);
-    	}			
+    else if (strRequest == "VERSION")
+    {
+      Serial.println(VERSION);
+    }			
 	}
 
-	//Fire cooldown
+	//Fire cooldown (after the robot just fired)
 	if (FiringCoolDownCounter > 0) {
 #ifdef DEBUG_THIS 
 		//Serial.println(FiringCoolDownCounter);
@@ -404,7 +426,7 @@ void loop() {
 		FiringCoolDownCounter--;
 	}
 
-	//Fire lockout
+	//Fire lockout (after the robot got hit)
 	if (FiringLockoutCounter > 0) {
 #ifdef DEBUG_THIS 
 		//Serial.println(FiringLockoutCounter);
@@ -412,51 +434,51 @@ void loop() {
 		FiringLockoutCounter--;
 
 		//blink firing leds 
-		if (FiringLockoutCounter % 2) {
-			digitalWrite(ONBOARD_LED_PIN, HIGH);
-			setDefaultLeds();	
-		}
-		else {
-			digitalWrite(ONBOARD_LED_PIN, LOW);
-			setColors(ENUM_COLOR_LED::black);				
-		}
+		//if (FiringLockoutCounter % 2) {
+		//	digitalWrite(ONBOARD_LED_PIN, HIGH);
+		//	setDefaultLeds();	
+		//}
+		//else {
+		//	digitalWrite(ONBOARD_LED_PIN, LOW);
+		//	setColors(ENUM_COLOR_LED::black);				
+		//}
 
 		//reset leds on exit
 		if (FiringLockoutCounter == 0) {
 			digitalWrite(ONBOARD_LED_PIN, LOW);
-		  	setDefaultLeds();	  		
+		  setDefaultLeds();	  		
 		}
 	}
 
 
-  	//Receive
-  	if (irrecv.decode(&results)) {    
-    	irrecv.resume(); // Receive the next value 
+	//Receive
+	if (irrecv.decode(&results)) {    
+  	irrecv.resume(); // Receive the next value 
 
 #ifdef DEBUG_THIS     	
-    	//Serial.println(results.value);
+  	//Serial.println(results.value);
 #endif
 
-    	//check if hit
-    	if (FiringLockoutCounter == 0) 
-    	{
-	    	if ( (bTeam == PIXY_RED) && (results.value == TX_MSG_BLUE) ) {bHit = true;}
-			if ( (bTeam == PIXY_BLUE) && (results.value == TX_MSG_RED) ) {bHit = true;}	
+  	//check if hit
+  	if (FiringLockoutCounter == 0) 
+  	{
+    	if ( (bTeam == PIXY_RED) && (results.value == TX_MSG_BLUE) ) {bHit = true;}
+		  if ( (bTeam == PIXY_BLUE) && (results.value == TX_MSG_RED) ) {bHit = true;}	
 
 #ifdef DEBUG_THIS 
-			if ( (results.value == TX_MSG_BLUE) || (results.value == TX_MSG_RED) ) {bHit = true;}	
+		if ( (results.value == TX_MSG_BLUE) || (results.value == TX_MSG_RED) ) {bHit = true;}	
 #endif
-	    	if (bHit)
-	    	{
-	    		bHit = false;
-				
-				FiringLockoutCounter = FIRE_LOCK_OUT;
-				 
-				digitalWrite(ONBOARD_LED_PIN, LOW);			   					
-				setColors(ENUM_COLOR_LED::black);
-	    		
-	    		Serial.println("HIT");
-			}
-	  	}
+    	if (bHit)
+    	{
+    		bHit = false;
+			
+			  FiringLockoutCounter = FIRE_LOCK_OUT;
+			 
+			  digitalWrite(ONBOARD_LED_PIN, LOW);			   					
+			  setColors(ENUM_COLOR_LED::black);
+    		
+    		Serial.println("HIT");
+		  }
+  	}
 	}  
 }
